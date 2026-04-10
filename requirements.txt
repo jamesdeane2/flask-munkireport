@@ -1,4 +1,14 @@
-flask>=3.0.0
-python-dotenv>=1.0.0
-gunicorn>=21.2.0
-requests>=2.31.0
+# Flask MunkiReport API Dependencies
+# Updated: December 2025
+
+# Core framework
+flask>=3.1.0
+
+# Environment configuration
+python-dotenv>=1.2.0
+
+# Production WSGI server
+gunicorn>=23.0.0
+
+# HTTP client (for tests)
+requests>=2.32.0

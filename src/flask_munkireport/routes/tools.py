@@ -188,20 +188,20 @@ def route_get_table_summary():
     try:
         data = request.get_json() or {}
         db = get_db()
-        
+
         if 'table_name' not in data:
             return jsonify({
                 "success": False,
                 "error": "Missing required field: table_name"
             }), 400
-        
+
         result = get_table_summary(
             db,
             table_name=data['table_name'],
             group_by=data.get('group_by'),
             filters=data.get('filters')
         )
-        
+
         return jsonify({
             "success": True,
             "data": result
@@ -211,6 +211,306 @@ def route_get_table_summary():
             "success": False,
             "error": str(e)
         }), 400
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@api.route('/tools/get_machine_profiles/<serial_number>', methods=['GET'])
+@require_api_key
+def route_get_machine_profiles(serial_number):
+    """Get all configuration profiles installed on a machine."""
+    try:
+        db = get_db()
+
+        query = """
+            SELECT
+                profile_uuid,
+                profile_name,
+                profile_organization,
+                profile_verification_state,
+                profile_method,
+                profile_install_date,
+                profile_removal_allowed,
+                profile_description,
+                profile_id,
+                payload_name,
+                payload_display,
+                user,
+                timestamp
+            FROM profile
+            WHERE serial_number = ?
+            ORDER BY profile_name, payload_name
+        """
+
+        result = db.execute_query(query, (serial_number,))
+
+        return jsonify({
+            "success": True,
+            "data": result,
+            "count": len(result)
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@api.route('/tools/get_filevault_status/<serial_number>', methods=['GET'])
+@require_api_key
+def route_get_filevault_status(serial_number):
+    """Get FileVault encryption status for a machine."""
+    try:
+        db = get_db()
+
+        query = """
+            SELECT
+                filevault_status,
+                has_personal_recovery_key,
+                has_institutional_recovery_key,
+                conversion_state,
+                conversion_percent,
+                filevault_users,
+                crypto_users,
+                volume_name,
+                volume_size,
+                bytes_converted,
+                auth_restart_support,
+                bootstraptoken_supported,
+                bootstraptoken_escrowed,
+                deferral_info
+            FROM filevault_status
+            WHERE serial_number = ?
+        """
+
+        result = db.execute_single(query, (serial_number,))
+
+        if result is None:
+            return jsonify({
+                "success": False,
+                "error": f"FileVault status not found: {serial_number}"
+            }), 404
+
+        return jsonify({
+            "success": True,
+            "data": result
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@api.route('/tools/get_firewall_status/<serial_number>', methods=['GET'])
+@require_api_key
+def route_get_firewall_status(serial_number):
+    """Get firewall status for a machine."""
+    try:
+        db = get_db()
+
+        query = """
+            SELECT
+                globalstate,
+                stealthenabled,
+                loggingenabled,
+                loggingoption,
+                allowsignedenabled,
+                allowdownloadsignedenabled,
+                firewallunload,
+                applications,
+                services,
+                version
+            FROM firewall
+            WHERE serial_number = ?
+        """
+
+        result = db.execute_single(query, (serial_number,))
+
+        if result is None:
+            return jsonify({
+                "success": False,
+                "error": f"Firewall status not found: {serial_number}"
+            }), 404
+
+        return jsonify({
+            "success": True,
+            "data": result
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@api.route('/tools/get_icloud_status/<serial_number>', methods=['GET'])
+@require_api_key
+def route_get_icloud_status(serial_number):
+    """Get iCloud account status for a machine."""
+    try:
+        db = get_db()
+
+        query = """
+            SELECT
+                logged_in,
+                display_name,
+                account_id,
+                account_description,
+                find_my_mac_enabled,
+                clouddesktop_desktop_enabled,
+                clouddesktop_documents_enabled,
+                clouddesktop_drive_enabled,
+                keychain_sync_enabled,
+                photo_stream_enabled,
+                cloud_photo_enabled,
+                calendar_enabled,
+                contacts_enabled,
+                mail_and_notes_enabled,
+                reminders_enabled,
+                siri_enabled,
+                is_managed_apple_id,
+                imessage_syncing_enabled
+            FROM icloud
+            WHERE serial_number = ?
+        """
+
+        result = db.execute_single(query, (serial_number,))
+
+        if result is None:
+            return jsonify({
+                "success": False,
+                "error": f"iCloud status not found: {serial_number}"
+            }), 404
+
+        return jsonify({
+            "success": True,
+            "data": result
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@api.route('/tools/get_local_admins/<serial_number>', methods=['GET'])
+@require_api_key
+def route_get_local_admins(serial_number):
+    """Get local admin users for a machine."""
+    try:
+        db = get_db()
+
+        query = """
+            SELECT
+                users,
+                user_count
+            FROM localadmin
+            WHERE serial_number = ?
+        """
+
+        result = db.execute_single(query, (serial_number,))
+
+        if result is None:
+            return jsonify({
+                "success": False,
+                "error": f"Local admin info not found: {serial_number}"
+            }), 404
+
+        return jsonify({
+            "success": True,
+            "data": result
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@api.route('/tools/get_defender_status/<serial_number>', methods=['GET'])
+@require_api_key
+def route_get_defender_status(serial_number):
+    """Get Microsoft Defender status for a machine."""
+    try:
+        db = get_db()
+
+        query = """
+            SELECT
+                healthy,
+                licensed,
+                real_time_protection_enabled,
+                real_time_protection_available,
+                real_time_protection_subsystem,
+                cloud_enabled,
+                cloud_automatic_sample_submission,
+                cloud_diagnostic_enabled,
+                definitions_version,
+                definitions_updated,
+                app_version,
+                engine_version,
+                org_id,
+                machine_guid,
+                release_ring,
+                log_level
+            FROM ms_defender
+            WHERE serial_number = ?
+        """
+
+        result = db.execute_single(query, (serial_number,))
+
+        if result is None:
+            return jsonify({
+                "success": False,
+                "error": f"Defender status not found: {serial_number}"
+            }), 404
+
+        return jsonify({
+            "success": True,
+            "data": result
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@api.route('/tools/get_storage_report/<serial_number>', methods=['GET'])
+@require_api_key
+def route_get_storage_report(serial_number):
+    """Get storage/disk report for a machine."""
+    try:
+        db = get_db()
+
+        query = """
+            SELECT
+                volumename,
+                mountpoint,
+                totalsize,
+                freespace,
+                percentage,
+                volumetype,
+                media_type,
+                encrypted,
+                smartstatus,
+                internal,
+                busprotocol
+            FROM diskreport
+            WHERE serial_number = ?
+            ORDER BY internal DESC, mountpoint
+        """
+
+        result = db.execute_query(query, (serial_number,))
+
+        return jsonify({
+            "success": True,
+            "data": result,
+            "count": len(result)
+        })
     except Exception as e:
         return jsonify({
             "success": False,

@@ -91,18 +91,18 @@ def build_limit_clause(limit: Optional[int]) -> str:
 
 def parse_timestamp(timestamp: Optional[int]) -> Optional[str]:
     """Convert Unix timestamp to ISO format string.
-    
+
     Args:
         timestamp: Unix timestamp (seconds since epoch)
-        
+
     Returns:
         ISO format datetime string, or None if timestamp is None
     """
     if timestamp is None:
         return None
-    
-    from datetime import datetime
-    return datetime.fromtimestamp(timestamp).isoformat()
+
+    from datetime import datetime, timezone
+    return datetime.fromtimestamp(timestamp, tz=timezone.utc).isoformat()
 
 
 def parse_json_field(json_str: Optional[str]) -> Optional[Dict[str, Any]]:

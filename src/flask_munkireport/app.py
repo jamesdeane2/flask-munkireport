@@ -22,7 +22,13 @@ def create_app():
     # Register blueprints
     from .routes import api
     app.register_blueprint(api, url_prefix='/api/v1')
-    
+
+    from .routes.compliance import compliance_bp
+    app.register_blueprint(compliance_bp, url_prefix='/api/v1/compliance')
+
+    from .routes.reports import reports_bp
+    app.register_blueprint(reports_bp, url_prefix='/api/v1/reports')
+
     # Root endpoint
     @app.route('/')
     def index():
@@ -32,7 +38,10 @@ def create_app():
             "endpoints": {
                 "health": "/api/v1/health",
                 "status": "/api/v1/status",
-                "tools": "/api/v1/tools/*"
+                "tools": "/api/v1/tools/*",
+                "compliance": "/api/v1/compliance/ce-plus",
+                "reports_tables": "/api/v1/reports/tables",
+                "reports_export": "/api/v1/reports/export/<table_name>"
             },
             "documentation": "See README.md for API documentation"
         })
