@@ -494,9 +494,7 @@ def route_get_machine_applications(serial_number):
         query = """
             SELECT
                 name,
-                bundleid,
-                version,
-                path
+                version
             FROM applications
             WHERE serial_number = ?
             ORDER BY name
