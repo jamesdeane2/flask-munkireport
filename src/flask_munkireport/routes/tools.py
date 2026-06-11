@@ -479,6 +479,43 @@ def route_get_defender_status(serial_number):
         }), 500
 
 
+@api.route('/tools/get_machine_applications/<serial_number>', methods=['GET'])
+@require_api_key
+def route_get_machine_applications(serial_number):
+    """Get installed applications (name + version) for a machine.
+
+    The software-inventory feed for the Cyber Essentials update-management
+    matcher. Returns one row per installed application from MunkiReport's
+    `applications` table, keyed by serial_number.
+    """
+    try:
+        db = get_db()
+
+        query = """
+            SELECT
+                name,
+                bundleid,
+                version,
+                path
+            FROM applications
+            WHERE serial_number = ?
+            ORDER BY name
+        """
+
+        result = db.execute_query(query, (serial_number,))
+
+        return jsonify({
+            "success": True,
+            "data": result,
+            "count": len(result)
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
 @api.route('/tools/get_storage_report/<serial_number>', methods=['GET'])
 @require_api_key
 def route_get_storage_report(serial_number):
