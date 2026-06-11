@@ -479,6 +479,47 @@ def route_get_defender_status(serial_number):
         }), 500
 
 
+@api.route('/tools/get_manifest_machines/<manifest>', methods=['GET'])
+@require_api_key
+def route_get_manifest_machines(manifest):
+    """List machines belonging to a manifest (client), keyed by serial.
+
+    The client-scoping enumerator for the Cyber Essentials dashboard — manifest
+    is MunkiReport's per-client grouping. Returns the full fleet for the client
+    (serial, name, os_version, last check-in) to drive per-device assessment.
+    """
+    try:
+        db = get_db()
+
+        query = """
+            SELECT
+                m.serial_number,
+                m.computer_name,
+                m.os_version,
+                m.machine_model,
+                mr.manifestname,
+                rd.timestamp AS last_checkin
+            FROM machine m
+            INNER JOIN munkireport mr ON m.serial_number = mr.serial_number
+            LEFT JOIN reportdata rd ON m.serial_number = rd.serial_number
+            WHERE mr.manifestname LIKE ?
+            ORDER BY m.computer_name
+        """
+
+        result = db.execute_query(query, (f"%{manifest}%",))
+
+        return jsonify({
+            "success": True,
+            "data": result,
+            "count": len(result)
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
 @api.route('/tools/get_machine_applications/<serial_number>', methods=['GET'])
 @require_api_key
 def route_get_machine_applications(serial_number):
