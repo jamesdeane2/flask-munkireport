@@ -29,6 +29,9 @@ def create_app():
     from .routes.reports import reports_bp
     app.register_blueprint(reports_bp, url_prefix='/api/v1/reports')
 
+    from .routes.business_units import business_units_bp
+    app.register_blueprint(business_units_bp, url_prefix='/api/v1/business-units')
+
     # Root endpoint
     @app.route('/')
     def index():
@@ -41,7 +44,8 @@ def create_app():
                 "tools": "/api/v1/tools/*",
                 "compliance": "/api/v1/compliance/ce-plus",
                 "reports_tables": "/api/v1/reports/tables",
-                "reports_export": "/api/v1/reports/export/<table_name>"
+                "reports_export": "/api/v1/reports/export/<table_name>",
+                "business_units": "/api/v1/business-units"
             },
             "documentation": "See README.md for API documentation"
         })
