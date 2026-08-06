@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>MunkiReport · Export Builder</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --panel: #ffffff; --border: #e2e5ea;
+    --text: #1e2430; --muted: #6b7383; --accent: #3b6ef5;
+    --accent-soft: #e8eefe; --chip: #eef1f6; --danger: #c0392b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text); height: 100vh;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px; background: var(--panel);
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  header .logo { font-weight: 700; font-size: 15px; white-space: nowrap; }
+  header .logo span { color: var(--accent); }
+  header .mock-tag {
+    font-size: 10px; font-weight: 700; letter-spacing: .08em; color: #9a6700;
+    background: #fff3cd; border: 1px solid #ffe08a; border-radius: 4px;
+    padding: 2px 6px; text-transform: uppercase;
+  }
+  #reportName {
+    flex: 1; max-width: 340px; padding: 7px 10px; font-size: 14px;
+    border: 1px solid var(--border); border-radius: 6px; background: #fafbfc;
+  }
+  #reportName:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  .spacer { flex: 1; }
+  button {
+    font: inherit; cursor: pointer; border-radius: 6px; padding: 7px 14px;
+    border: 1px solid var(--border); background: var(--panel); color: var(--text);
+  }
+  button:hover { background: #f0f2f5; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.primary:hover { background: #2f5cd8; }
+
+  /* ── Layout ── */
+  main { display: flex; flex: 1; min-height: 0; }
+
+  /* ── Left rail ── */
+  #rail {
+    width: 250px; flex-shrink: 0; background: var(--panel);
+    border-right: 1px solid var(--border); display: flex; flex-direction: column;
+  }
+  #railSearch { margin: 10px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; }
+  #railSearch:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  #tree { overflow-y: auto; flex: 1; padding-bottom: 20px; }
+  .mod-head {
+    display: flex; align-items: center; gap: 6px; padding: 7px 12px;
+    font-weight: 600; font-size: 13px; cursor: pointer; user-select: none; color: var(--text);
+  }
+  .mod-head:hover { background: #f6f8fa; }
+  .mod-head .tri { font-size: 9px; color: var(--muted); width: 10px; transition: transform .12s; }
+  .mod-head.open .tri { transform: rotate(90deg); }
+  .mod-head .count {
+    margin-left: auto; font-size: 11px; font-weight: 600; color: var(--accent);
+    background: var(--accent-soft); border-radius: 8px; padding: 0 7px; min-width: 20px; text-align: center;
+  }
+  .mod-cols { display: none; }
+  .mod-head.open + .mod-cols { display: block; }
+  .col-row {
+    display: flex; align-items: center; gap: 8px; padding: 5px 12px 5px 28px;
+    cursor: pointer; user-select: none; color: #3a4150;
+  }
+  .col-row:hover { background: #f6f8fa; }
+  .col-row input { accent-color: var(--accent); }
+  .hidden { display: none !important; }
+
+  /* ── Workbench ── */
+  #bench { flex: 1; display: flex; flex-direction: column; min-width: 0; padding: 14px 18px; gap: 12px; overflow: hidden; }
+
+  /* filters */
+  #filterBar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  #filterBar .lbl { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .filter-row {
+    display: flex; align-items: center; gap: 6px; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px;
+  }
+  .filter-row select, .filter-row input {
+    font: inherit; border: none; background: transparent; padding: 3px 4px; max-width: 150px;
+  }
+  .filter-row select:focus, .filter-row input:focus { outline: none; background: var(--accent-soft); border-radius: 4px; }
+  .filter-row .rm { border: none; background: none; color: var(--muted); padding: 0 4px; font-size: 15px; }
+  .filter-row .rm:hover { color: var(--danger); background: none; }
+  #addFilter { border-style: dashed; color: var(--muted); padding: 5px 10px; }
+  .and-tag { font-size: 11px; font-weight: 700; color: var(--muted); }
+
+  /* chips */
+  #chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; align-items: center; }
+  #chips .hint { color: var(--muted); font-size: 13px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--chip);
+    border: 1px solid var(--border); border-radius: 14px; padding: 3px 10px 3px 8px;
+    font-size: 12.5px; font-weight: 500; cursor: grab; user-select: none;
+  }
+  .chip.dragging { opacity: .4; }
+  .chip .grip { color: #9aa1af; font-size: 11px; letter-spacing: -1px; }
+  .chip .mod { color: var(--muted); font-weight: 400; }
+  .chip .x { cursor: pointer; color: var(--muted); font-size: 13px; padding: 0 1px; }
+  .chip .x:hover { color: var(--danger); }
+
+  /* table */
+  #tableWrap {
+    flex: 1; overflow: auto; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 8px; min-height: 0;
+  }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  thead th {
+    position: sticky; top: 0; background: #fafbfc; text-align: left; font-weight: 600;
+    padding: 9px 12px; border-bottom: 2px solid var(--border); white-space: nowrap; z-index: 1;
+  }
+  thead th .thmod { display: block; font-size: 10px; font-weight: 500; color: var(--muted); }
+  tbody td { padding: 7px 12px; border-bottom: 1px solid #eef0f3; white-space: nowrap; }
+  tbody tr:hover { background: #f8fafd; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .pill { display: inline-block; font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 8px; }
+  .pill.ok { background: #e5f6ec; color: #177245; }
+  .pill.bad { background: #fdecea; color: var(--danger); }
+  #empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; color: var(--muted); gap: 8px; text-align: center; padding: 30px;
+  }
+  #empty .big { font-size: 17px; font-weight: 600; color: #4a5261; }
+
+  /* footer of bench */
+  #benchFoot { display: flex; align-items: center; color: var(--muted); font-size: 12.5px; flex-shrink: 0; }
+
+  /* toast */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #1e2430; color: #fff; padding: 10px 18px; border-radius: 8px;
+    font-size: 13.5px; transition: transform .25s; z-index: 50; max-width: 90vw;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+
+</head>
+<body>
+
+<header>
+  <div class="logo">MunkiReport <span>· Export Builder</span></div>
+  <input id="reportName" placeholder="Untitled report" spellcheck="false">
+  <div class="spacer"></div>
+  <button id="btnLink" title="The whole report definition lives in the URL — copy it, bookmark it, send it">🔗 Copy link</button>
+  <button id="btnCsv" class="primary">⬇ Export CSV</button>
+  <button id="btnXlsx">⬇ Export XLSX</button>
+</header>
+
+<main>
+  <div id="rail">
+    <input id="railSearch" placeholder="Search columns…" spellcheck="false">
+    <div id="tree"></div>
+  </div>
+
+  <div id="bench">
+    <div id="filterBar">
+      <span class="lbl">Filters</span>
+      <span id="filterRows" style="display:contents"></span>
+      <button id="addFilter">＋ Add filter</button>
+    </div>
+    <div id="chips"></div>
+    <div id="tableWrap"></div>
+    <div id="benchFoot"></div>
+  </div>
+</main>
+
+<div id="toast" hidden></div>
+
+<script>
+/* ── schema arrives from the server ── */
+let MODULES = [], COLMAP = {};
+
+const OPS = { 'eq':'=', 'ne':'≠', 'ct':'contains', 'gt':'>', 'lt':'<' };
+let state = { name:'', cols:[], filters:[] };
+let lastResult = null;
+
+function readURL(){
+  const p = new URLSearchParams(location.search);
+  state.name = p.get('name') || '';
+  state.cols = (p.get('cols')||'').split(',').filter(c=>COLMAP[c]);
+  state.filters = p.getAll('f').map(s=>{ const [field,op,...v]=s.split('~'); return {field, op, val:v.join('~')}; })
+                   .filter(f=>COLMAP[f.field] && OPS[f.op]);
+  if (!state.cols.length && !p.has('cols'))
+    state.cols = ['machine.hostname','reportdata.serial_number','reportdata.console_user','machine.machine_desc','munkireport.manifestname'].filter(c=>COLMAP[c]);
+}
+function qs(includeName){
+  const p = new URLSearchParams();
+  if (includeName && state.name) p.set('name', state.name);
+  p.set('cols', state.cols.join(','));
+  state.filters.forEach(f=>{ if(f.field&&f.val!=='') p.append('f', `${f.field}~${f.op}~${f.val}`); });
+  return p;
+}
+function writeURL(){ history.replaceState(null,'', location.pathname+'?'+qs(true).toString()); }
+
+/* ── tree ── */
+const tree = document.getElementById('tree');
+function renderTree(){
+  tree.innerHTML='';
+  MODULES.forEach(m=>{
+    const head = document.createElement('div');
+    head.className = 'mod-head' + (m.cols.some(c=>state.cols.includes(c.id)) || m.key==='machine' ? ' open':'');
+    const n = m.cols.filter(c=>state.cols.includes(c.id)).length;
+    head.innerHTML = `<span class="tri">▶</span>${m.name}${n?`<span class="count">${n}</span>`:''}`;
+    head.onclick = ()=> head.classList.toggle('open');
+    const box = document.createElement('div'); box.className='mod-cols';
+    m.cols.forEach(c=>{
+      const row = document.createElement('label'); row.className='col-row'; row.dataset.search=(m.name+' '+c.label).toLowerCase();
+      row.innerHTML = `<input type="checkbox" ${state.cols.includes(c.id)?'checked':''}> ${c.label}`;
+      row.querySelector('input').onchange = e=>{
+        if (e.target.checked) state.cols.push(c.id);
+        else state.cols = state.cols.filter(x=>x!==c.id);
+        update();
+      };
+      box.appendChild(row);
+    });
+    tree.append(head, box);
+  });
+  filterTree();
+}
+const railSearch = document.getElementById('railSearch');
+function filterTree(){
+  const q = railSearch.value.trim().toLowerCase();
+  tree.querySelectorAll('.col-row').forEach(r=> r.classList.toggle('hidden', q && !r.dataset.search.includes(q)));
+  tree.querySelectorAll('.mod-head').forEach(h=>{
+    const cols = h.nextElementSibling;
+    const any = [...cols.children].some(c=>!c.classList.contains('hidden'));
+    h.classList.toggle('hidden', q && !any);
+    if (q && any) h.classList.add('open');
+  });
+}
+railSearch.oninput = filterTree;
+
+/* ── chips ── */
+const chips = document.getElementById('chips');
+function renderChips(){
+  chips.innerHTML='';
+  if (!state.cols.length){ chips.innerHTML='<span class="hint">← Tick columns to build your report. Drag chips to reorder.</span>'; return; }
+  state.cols.forEach(id=>{
+    const c = COLMAP[id];
+    const el = document.createElement('span');
+    el.className='chip'; el.draggable=true; el.dataset.id=id;
+    el.innerHTML=`<span class="grip">⠿</span><span class="mod">${c.modName} ·</span> ${c.label} <span class="x" title="Remove">✕</span>`;
+    el.querySelector('.x').onclick = ()=>{ state.cols = state.cols.filter(x=>x!==id); update(); };
+    el.ondragstart = e=>{ e.dataTransfer.setData('text/plain', id); el.classList.add('dragging'); };
+    el.ondragend = ()=> el.classList.remove('dragging');
+    el.ondragover = e=> e.preventDefault();
+    el.ondrop = e=>{
+      e.preventDefault();
+      const from = e.dataTransfer.getData('text/plain');
+      if (from===id) return;
+      const arr = state.cols.filter(x=>x!==from);
+      arr.splice(arr.indexOf(id), 0, from);
+      state.cols = arr; update();
+    };
+    chips.appendChild(el);
+  });
+}
+
+/* ── filters ── */
+const filterRows = document.getElementById('filterRows');
+function renderFilters(){
+  filterRows.innerHTML='';
+  state.filters.forEach((f,i)=>{
+    if (i>0){ const t=document.createElement('span'); t.className='and-tag'; t.textContent='AND'; filterRows.appendChild(t); }
+    const row = document.createElement('span'); row.className='filter-row';
+    const fieldSel = document.createElement('select');
+    fieldSel.innerHTML = '<option value="">field…</option>' + MODULES.map(m=>
+      `<optgroup label="${m.name}">` + m.cols.map(c=>`<option value="${c.id}" ${f.field===c.id?'selected':''}>${c.label}</option>`).join('') + '</optgroup>'
+    ).join('');
+    const opSel = document.createElement('select');
+    opSel.innerHTML = Object.entries(OPS).map(([k,v])=>`<option value="${k}" ${f.op===k?'selected':''}>${v}</option>`).join('');
+    const val = document.createElement('input'); val.placeholder='value'; val.value=f.val;
+    const rm = document.createElement('button'); rm.className='rm'; rm.textContent='✕'; rm.title='Remove filter';
+    fieldSel.onchange = ()=>{ f.field=fieldSel.value; update(); };
+    opSel.onchange = ()=>{ f.op=opSel.value; update(); };
+    val.oninput = ()=>{ f.val=val.value; scheduleFetch(); };
+    val.onchange = ()=> update();
+    rm.onclick = ()=>{ state.filters.splice(i,1); update(); };
+    row.append(fieldSel, opSel, val, rm);
+    filterRows.appendChild(row);
+  });
+}
+document.getElementById('addFilter').onclick = ()=>{ state.filters.push({field:'', op:'eq', val:''}); renderFilters(); };
+
+/* ── live preview ── */
+const tableWrap = document.getElementById('tableWrap');
+const benchFoot = document.getElementById('benchFoot');
+const OK = {'Yes':1,'On':1,'Enabled':1,'Active':1,'Covered':1};
+const BAD = {'No':1,'Off':1,'Disabled':1,'Expired':1};
+const INVERT = {'security.root_user':1,'nudge.past_required_install_date':1};
+let fetchTimer = null, fetchSeq = 0;
+
+function scheduleFetch(){ clearTimeout(fetchTimer); fetchTimer = setTimeout(fetchPreview, 300); }
+
+async function fetchPreview(){
+  if (!state.cols.length){
+    tableWrap.innerHTML = `<div id="empty"><div class="big">Nothing selected yet</div>
+      <div>Pick columns on the left — every module joins on serial number automatically.<br>
+      Your selection is saved in the page URL: bookmark it and it&#39;s a reusable report.</div></div>`;
+    benchFoot.textContent='';
+    return;
+  }
+  const seq = ++fetchSeq;
+  benchFoot.textContent = 'Loading…';
+  try {
+    const res = await fetch('api/query?'+qs(false).toString());
+    const data = await res.json();
+    if (seq !== fetchSeq) return;               // stale response
+    if (!data.success) throw new Error(data.error||'query failed');
+    lastResult = data;
+    renderTable(data);
+  } catch(e){
+    if (seq !== fetchSeq) return;
+    tableWrap.innerHTML = `<div id="empty"><div class="big">Query failed</div><div>${e.message}</div></div>`;
+    benchFoot.textContent = '';
+  }
+}
+
+function renderTable(data){
+  let html = '<table><thead><tr>' + state.cols.map(id=>{
+    const c=COLMAP[id]; return `<th><span class="thmod">${c.modName}</span>${c.label}</th>`;
+  }).join('') + '</tr></thead><tbody>';
+  data.rows.forEach(r=>{
+    html += '<tr>' + state.cols.map(id=>{
+      const v = r[id] ?? '';
+      if (OK[v]||BAD[v]){
+        const good = INVERT[id] ? BAD[v] : OK[v];
+        return `<td><span class="pill ${good?'ok':'bad'}">${v}</span></td>`;
+      }
+      if (typeof v==='number') return `<td class="num">${v}</td>`;
+      return `<td>${String(v).replace(/</g,'&lt;')}</td>`;
+    }).join('') + '</tr>';
+  });
+  html += '</tbody></table>';
+  tableWrap.innerHTML = html;
+  benchFoot.textContent = `${data.matched} of ${data.total} machines match` +
+    (data.matched>data.preview_cap? ` · previewing first ${data.preview_cap} (export includes all)` : '');
+}
+
+/* ── export & toast ── */
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.hidden = false; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(()=> t.classList.remove('show'), 2600);
+}
+function doExport(format){
+  if (!state.cols.length) return toast('Pick some columns first');
+  const p = qs(true); p.set('format', format);
+  location.href = 'api/export?'+p.toString();
+}
+document.getElementById('btnCsv').onclick = ()=> doExport('csv');
+document.getElementById('btnXlsx').onclick = ()=> doExport('xlsx');
+document.getElementById('btnLink').onclick = async ()=>{
+  writeURL();
+  try { await navigator.clipboard.writeText(location.href); toast('Link copied — the URL is the whole report definition'); }
+  catch { toast('Copy failed — grab it from the address bar'); }
+};
+const nameInput = document.getElementById('reportName');
+nameInput.oninput = ()=>{ state.name = nameInput.value; };
+nameInput.onchange = ()=> writeURL();
+
+/* ── boot ── */
+function update(){
+  writeURL(); renderTree(); renderChips(); renderFilters(); scheduleFetch();
+}
+(async function init(){
+  try {
+    const res = await fetch('api/schema');
+    const data = await res.json();
+    MODULES = data.modules.map(m=>({ ...m, cols: m.cols.map(c=>({ ...c, modName: m.name })) }));
+    MODULES.forEach(m=> m.cols.forEach(c=> COLMAP[c.id]=c));
+  } catch(e){
+    tableWrap.innerHTML = `<div id="empty"><div class="big">Can&#39;t reach the API</div><div>${e.message}</div></div>`;
+    return;
+  }
+  readURL();
+  nameInput.value = state.name;
+  renderTree(); renderChips(); renderFilters(); fetchPreview();
+})();
+</script>
+</body>
+</html>

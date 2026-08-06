@@ -32,6 +32,9 @@ def create_app():
     from .routes.business_units import business_units_bp
     app.register_blueprint(business_units_bp, url_prefix='/api/v1/business-units')
 
+    from .routes.report_builder import report_builder_bp
+    app.register_blueprint(report_builder_bp, url_prefix='/report')
+
     # Root endpoint
     @app.route('/')
     def index():

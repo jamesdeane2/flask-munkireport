@@ -12,3 +12,4 @@ gunicorn>=26.0.0
 
 # HTTP client (for tests)
 requests>=2.34.2
+openpyxl>=3.1
