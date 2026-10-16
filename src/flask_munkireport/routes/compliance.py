@@ -27,7 +27,7 @@ def route_ce_plus():
 
     Request body:
         {
-            "manifest": "Pablo" (required),
+            "manifest": "ExampleCo" (required),
             "include_passing": false (optional)
         }
 

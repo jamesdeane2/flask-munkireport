@@ -48,7 +48,7 @@ All endpoints except `/health` and `/status` require authentication via `X-API-K
   {
     "filters": {
       "mdm_enrolled": "No",
-      "manifest": "Pablo"
+      "manifest": "ExampleCo"
     },
     "include": ["reportdata", "mdm_status"],
     "order_by": "hostname",

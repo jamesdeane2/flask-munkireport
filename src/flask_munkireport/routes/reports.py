@@ -55,9 +55,9 @@ def export_table(table_name):
     Always includes: serial_number, hostname, last_seen, last_seen_iso
 
     Examples:
-        GET  /reports/export/filevault?manifest=Pablo&sort=-last_seen&format=csv
+        GET  /reports/export/filevault?manifest=ExampleCo&sort=-last_seen&format=csv
         GET  /reports/export/filevault?filter_filevault_status=FileVault is On
-        POST /reports/export/filevault {"filters": {"filevault_status": "FileVault is On"}, "manifest": "Pablo"}
+        POST /reports/export/filevault {"filters": {"filevault_status": "FileVault is On"}, "manifest": "ExampleCo"}
     """
     try:
         db = get_db()
